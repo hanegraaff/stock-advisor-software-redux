@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/doc/
+**/test/
+**/htmlcov/
+**/financial-data/
+**/app-data/
+**/test*.*
+**/*.sh
