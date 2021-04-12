@@ -1,11 +1,10 @@
 # Overview
 ![Stock Advisor Design](doc/stock-advisor-services.png)
 
-This repo is part of the Stock Advisor project found here:
+This repo was forked from the stock-advisor project
+https://github.com/hanegraaff/stock-advisor
 
-https://github.com/hanegraaff/stock-advisor-infrastructure
-
-This project contains the Stock Advisor application software. It is organized into two services that run as docker images. The first is a recommendation service that generates predictions based on various trading strategies, and the second is a portfolio manager that executes trades based on those same predictions.
+It's being refactored to support the Yahoo Finance API the capabilities it supports.
 
 
 # Table of Contents
