@@ -4,15 +4,16 @@ This module is a value add to the Yahoo Finance and implements a
 number of functions to read current and historical prices and indicators
 """
 
+import yfinance as yf
 import logging
-import datetime
+from datetime import date, datetime, timedelta
 from exception.exceptions import DataError, ValidationError
 from support.financial_cache import cache
 
 log = logging.getLogger()
 
 
-YFINANCE_CACHE_PREFIX = 'intrinio'
+YFINANCE_CACHE_PREFIX = 'yfinance'
 
 '''
   Testing APIs using requests package
@@ -59,7 +60,17 @@ def test_api_endpoint():
     """
     pass
 
-@retry_server_errors
+def date_to_string(date: date):
+    """
+      returns a string representation of a date that is usable by the intrinio API
+
+      Returns
+      ----------
+      A string formatted as YYYY-MM-DD. This is the format used by most Intrinio APIs
+    """
+    return date.strftime("%Y-%m-%d")
+
+#@retry_server_errors
 def get_daily_stock_close_prices(ticker: str, start_date: datetime, end_date: datetime):
     '''
       Returns a list of historical daily stock prices given a ticker symbol and
@@ -85,7 +96,17 @@ def get_daily_stock_close_prices(ticker: str, start_date: datetime, end_date: da
       }
     '''
 
-    pass
+    ticker = yf.Ticker(ticker)
+
+    start = date_to_string(start_date)
+    end = date_to_string(end_date + timedelta(days=1))
+
+    # get historical market data
+    #hist = ticker.history(start="2021-01-01", end="2021-04-12")
+    hist = ticker.history(start=start, end=end)
+
+    print(hist)
+
 
 def get_latest_close_price(ticker, price_date: datetime, max_looback: int):
     """
@@ -103,7 +124,7 @@ def get_latest_close_price(ticker, price_date: datetime, max_looback: int):
 '''
 
 
-@retry_server_errors
+#@retry_server_errors
 def get_macd_indicator(ticker: str, start_date: datetime, end_date: datetime,
                        fast_period: int, slow_period: int, signal_period: int):
     '''
@@ -146,7 +167,7 @@ def get_macd_indicator(ticker: str, start_date: datetime, end_date: datetime,
     pass
 
 
-@retry_server_errors
+#@retry_server_errors
 def get_sma_indicator(ticker: str, start_date: datetime, end_date: datetime,
                       period_days: int):
     '''
@@ -183,9 +204,5 @@ def get_sma_indicator(ticker: str, start_date: datetime, end_date: datetime,
     '''
 
     pass
-
-'''
-  Finacial statement APIs using the FUNDAMENTALS_API client
-'''
 
 
