@@ -111,7 +111,7 @@ def get_business_date_offset(business_date: date, days_offset: int):
 
     # if business_date is not valid, raise an exception
     try:
-        market_calendar.index.get_loc(business_date)
+        market_calendar.index.get_loc(str(business_date))
     except Exception as e:
         raise ValidationError("Cannot offset %s by %d days because %s is not a valid business date" % (
             business_date, days_offset, business_date), e)

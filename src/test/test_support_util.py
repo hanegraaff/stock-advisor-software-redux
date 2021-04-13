@@ -56,6 +56,10 @@ class TestSupportUtil(unittest.TestCase):
 
     '''
         get_business_date_offest test cases
+        
+        Please note that the Pandas Market Calendar library
+        requires recent business dates. If these tests fail it
+        may be because dates that are too old may be passed here.
     '''
 
     def test_get_business_date_offest_future(self):
