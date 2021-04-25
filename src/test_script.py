@@ -11,7 +11,7 @@ import pandas_market_calendars as mcal
 import pandas as pd
 
 from support import logging_definition, util, constants
-from connectors import yfinance_data as yf
+from connectors.yfinance_data import YFPrices
 from strategies.price_dispersion_strategy import PriceDispersionStrategy
 from model.ticker_list import TickerList
 from support import constants
@@ -43,10 +43,10 @@ def main():
         macd_strategy.generate_recommendation()
         macd_strategy.display_results()'''
 
+        price_df = YFPrices.get_enriched_prices('ARKK', datetime(2021, 1, 1), datetime(2021, 4, 10))
 
-        yf.get_daily_stock_close_prices('SPY', datetime(2021, 4, 9), datetime(2021, 4, 12))
-
-
+        print(price_df)
+        
 
     except Exception as e:
         log.error("Could run script, because, %s" % (str(e)))
