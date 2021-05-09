@@ -129,8 +129,6 @@ class MACDCrossoverStrategy(BaseStrategy):
         hist_prices[macd_col]
         hist_prices[signal_col]
 
-        print(hist_prices)
-
         try:
             latest_price_rec = hist_prices.loc[analisys_date_str]
 

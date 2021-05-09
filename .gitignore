@@ -7,7 +7,7 @@ launch.json
 .coverage
 htmlcov
 reports
-cache.db*
+financial-data
 *.xlsx
 app_data
 *.s3download
