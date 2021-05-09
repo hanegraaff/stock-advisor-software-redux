@@ -142,7 +142,8 @@ def main():
 
 def get_business_date_list(start_date: date, end_date: date):
     '''
-        given a calendar date, returns the nearest past business date
+        given a start and end calendar date, returns a list of all business
+        dates between that range
     '''
     if start_date >= end_date:
         raise ValidationError("Start date must be before end date")

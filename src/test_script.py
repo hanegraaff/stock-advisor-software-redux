@@ -9,10 +9,9 @@ from datetime import datetime, timedelta, time
 from datetime import date, time
 import pandas_market_calendars as mcal
 import pandas as pd
-
+from strategies.macd_crossover_strategy import MACDCrossoverStrategy
 from support import logging_definition, util, constants
-from connectors.yfinance_data import YFPrices
-from strategies.price_dispersion_strategy import PriceDispersionStrategy
+import connectors.yfinance_data as yfinance
 from model.ticker_list import TickerList
 from support import constants
 from support.configuration import Configuration
@@ -31,21 +30,32 @@ def main():
     '''
     try:
 
-        '''ticker_list = TickerList.from_local_file(
-            "%s/djia30.json" % (constants.APP_DATA_DIR))
+        ticker_list = TickerList.from_local_file(
+            "%s/macd_tickers.json" % (constants.APP_DATA_DIR))
 
-        config = Configuration.try_from_s3(
-            constants.STRATEGY_CONFIG_FILE_NAME, 'sa')
+        config = Configuration.from_local_config(
+            constants.STRATEGY_CONFIG_FILE_NAME)
 
-        #macd_strategy = MACDCrossoverStrategy.from_configuration(config, 'sa')
+        #macd_strategy = MACDCrossoverStrategy.from_configur    ation(config, 'sa')
         macd_strategy = MACDCrossoverStrategy(
-            ticker_list, date(2020, 6, 16), 0.0016, 12, 16, 9)
+            ticker_list, date(2021, 5, 7), 0.0016, 12, 26, 9)
         macd_strategy.generate_recommendation()
-        macd_strategy.display_results()'''
+        macd_strategy.display_results()
 
-        price_df = YFPrices.get_enriched_prices('ARKK', datetime(2021, 1, 1), datetime(2021, 4, 10))
+        '''price_df = yfinance.get_enriched_prices('SPY', datetime(2021, 1, 1), datetime(2021, 4, 25))
 
-        print(price_df)
+        price_df[yfinance.get_macd_column(12, 26)]
+        price_df[yfinance.get_macd_signal_column(12, 26, 9)]
+
+        print(price_df.loc['2021-01-05'])
+        print(price_df.loc['2021-01-05']['Close'])
+        print(price_df.loc['2021-01-05'][yfinance.get_macd_column(12, 26)])
+        print(price_df.loc['2021-01-05'][yfinance.get_macd_signal_column(12, 26, 9)])
+        '''
+
+
+
+
         
 
     except Exception as e:

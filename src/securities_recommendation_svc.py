@@ -13,7 +13,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from connectors import aws_service_wrapper, connector_test
 from exception.exceptions import ValidationError, AWSError
-from strategies.price_dispersion_strategy import PriceDispersionStrategy
 from strategies.macd_crossover_strategy import MACDCrossoverStrategy
 from services import recommendation_svc
 from model.recommendation_set import SecurityRecommendationSet
@@ -88,7 +87,6 @@ def main():
 
         log.info("Initalizing Trading Strategies")
         strategies = [
-            PriceDispersionStrategy.from_configuration(configuration, app_ns),
             MACDCrossoverStrategy.from_configuration(configuration, app_ns)
         ]
 

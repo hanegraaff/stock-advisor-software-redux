@@ -5,6 +5,7 @@ import logging
 import pandas as pd
 import pandas_market_calendars as mcal
 import dateutil.parser as parser
+import connectors.yfinance_data as yfinance
 from datetime import datetime, timedelta, date, time
 from collections import OrderedDict
 from support import util, constants
@@ -13,7 +14,9 @@ from strategies import calculator
 from model.recommendation_set import SecurityRecommendationSet
 from model.ticker_list import TickerList
 from exception.exceptions import ValidationError, DataError
-from connectors import intrinio_data, intrinio_util
+
+
+#from connectors import intrinio_data, intrinio_util
 
 log = logging.getLogger()
 
@@ -64,6 +67,8 @@ class MACDCrossoverStrategy(BaseStrategy):
                 MACD signal period in days, e.g. 9
         '''
 
+        self.star_price_date = util.get_business_date_offset(analysis_date, -200)
+
         self.ticker_list = ticker_list
         self.analysis_date = analysis_date
         self.divergence_factor_threshold = divergence_factor_threshold
@@ -107,27 +112,31 @@ class MACDCrossoverStrategy(BaseStrategy):
             -------
             A Tuple with the following elements:
             current_price: float
-                The Current price for the ticker symbol
-            macd_lines: list
-                The past 3 days of MACD values
-            signal_lines
-                The past 3 days of MACD Singal values
-
+                The current price for the ticker symbol
+            current_macd: float
+                The current macd value
+            current_mcd_signal
+                The current macd signal value
         '''
-        dict_key = self.analysis_date.strftime("%Y-%m-%d")
+        macd_col = yfinance.get_macd_column(self.macd_fast_period, self.macd_slow_period)
+        signal_col = yfinance.get_macd_signal_column(self.macd_fast_period, self.macd_slow_period, self.macd_signal_period)
+        analisys_date_str = self.analysis_date.strftime("%Y-%m-%d")
 
-        current_price_dict = intrinio_data.get_daily_stock_close_prices(
-            ticker_symbol, self.analysis_date, self.analysis_date
-        )
+        # load historical prices
+        hist_prices = yfinance.get_enriched_prices(ticker_symbol, self.star_price_date, self.analysis_date)
 
-        macd_dict = intrinio_data.get_macd_indicator(
-            ticker_symbol, self.analysis_date, self.analysis_date, self.macd_fast_period, self.macd_slow_period, self.macd_signal_period
-        )
+        # Generate MACD lines
+        hist_prices[macd_col]
+        hist_prices[signal_col]
+
+        print(hist_prices)
 
         try:
-            current_price = current_price_dict[dict_key]
-            macd_line = macd_dict[dict_key]['macd_line']
-            signal_line = macd_dict[dict_key]['signal_line']
+            latest_price_rec = hist_prices.loc[analisys_date_str]
+
+            current_price = latest_price_rec['Close']
+            macd_line = latest_price_rec[macd_col]
+            signal_line = latest_price_rec[signal_col]
         except Exception as e:
             raise ValidationError(
                 "Could not read pricing data for %s" % ticker_symbol, e)
