@@ -11,7 +11,6 @@ It's being refactored to support the Yahoo Finance API the capabilities it suppo
 * [Financial Brokerage and Data](#financial-brokerage-and-data)
 * [Prerequisites](#prerequisites)
     * [Authentication Keys](#authentication-keys)
-        * [Intrinio API Key](#intrinio-api-key)
         * [TDAmeritrade Keys](#tdameritrade-keys)
     * [Develpment Environment](#develpment-environment)
 * [Trading Strategies](#trading-strategies)
@@ -35,35 +34,19 @@ It's being refactored to support the Yahoo Finance API the capabilities it suppo
 * [Unit Testing](#unit-testing)
 
 # Financial Brokerage and Data
-This software relies on a range of financial data to perform its calculations. As of this version, data is sourced from Intrinio, though other providers may be supported in the future.
+This software relies on a range of financial data to generate stock recommendations; as of this version, data is sourced from Yahoo Finance, which is free to use and doen not require an API key
 
-Intrinio offers free access to their sandbox, which gives developers access to a limited dataset comprising of the DOW30, and the results presented here are based on that list. A paid subscription allows access to a much larger universe of stocks.
-
-This software also has the ability to trade automatically and requires access to a personal TD Ameritrade brokerage account. Once configured, it will use the cash available in the account to maintain an evolving portfolio based on the latest recommendations.
+This software also integrates with a personal TD Ameritrade brokerage account and actively manages a portfolio based on the latest recommendations.
 
 # Prerequisites
 1) Python 3.8
-2) Intrinio API Key
-3) Access to a TDAmeritrade brokerage account
-4) Access to AWS account.
+2) Access to a TDAmeritrade brokerage account
+3) Access to AWS account.
 
 ## Authentication Keys
-All authentication keys are stored as environment variables. When running locally these
-must be exported to the environment, and when running on ECS they are sourced directly
-from the parameter store and fed to the container environment. This section describes the process of exporting keys locally.
-
-### Intrinio API Key
-You will need to set up an Intrinio API Key (https://www.intrinio.com) with access to the "US Fundamentals and Stock Prices" and "Zacks Price Targets" feeds.
-
-the API must be saved to the environment like so:
-
-```export INTRINIO_API_KEY=[your API key]```
+Authentication keys are stored as environment variables. When running locally these must be exported to the environment, and when running on ECS they are sourced directly from the parameter store and fed to the container environment. This section describes the process of exporting keys locally.
 
 ### TDAmeritrade Keys
-Additionally, you will need to authenticate with TDAmeritrade in order to buy and sell securities. This software will treat the account as its own, meaning that any
-positions that are not part of its portfolio, will be unwound. Specifically, it will
-execute trades in a way that positions will always match those in the recommended portfolio.
-
 TDAmeritrade uses OAuth for authentication, and the initial setup process is described
 here:
 
@@ -206,131 +189,7 @@ And here is what the recommendation will look like:
         }
     ]
 }
-
 ```
-
-## Price Dispersion Strategy
-This strategy generates monthly US Equities recommendations using a market sentiment algorithm that ranks stocks based on the level of analyst target price agreement, and is based on the findings of paper like these:
-
-|Paper|Author(s)|
-|--|--|
-|[Consensus Analyst Target Prices: Information Content and Implications for Investors](doc/Consensus-Analyst-Target-Prices.pdf)|Asa B. Palley, Thomas D. Steffen, X. Frank Zhang|
-|[Dispersion in Analysts’ Target Prices and Stock Returns](doc/Dispersion-Analysts-Target-Prices-Stock-Returns.pdf)|Hongrui Feng Shu Yan|
-|[The predictive power of analyst price target and its dispersion](doc/Predictive-Power-Analyst-Price-Target-Dispersion.pdf)|Heng(Emily) Wang, Shu Yan|
-
-They suggest, among other things, that when taken individually or even on average, analyst price targets are not a good predictor of returns, but the degree of agreement/disagreement is.
-
-The strategy is designed to run once per month once all price forecasts are available; analysts typically update their forecasts on a monthly basis. Recommendations that result from this strategy are valid for the entire calendar month and are only updated at the beginning of following month.
-
-### Algorithm
-1) For each ticker symbol in the securities list, download:
-    - Current Price
-    - Analyst price forecast average
-    - Analyst price forecast standard deviation
-    - Analyst price forecast count (i.e. total forecasts)
-2) Normalize the standard deviation by converting it into a percentage relative to the price.
-3) Load data into a Pandas DataFrame, rank it by this percentage and sort into deciles. Sort each decile by expected return.
-4) Select a subset from the top decile(s). This will return stocks with the largest level of disagreement.
-5) ???
-6) Profit!
-
-### Output
-The following is the output that is displayed when the ```display_results()``` method is called.
-
-```
-[INFO] - Recommended Securities
-[INFO] - {
-    "set_id": "5d6c5a42-b54d-11ea-a412-acbc329ef75f",
-    "creation_date": "2020-06-23T12:30:47.271203+00:00",
-    "valid_from": "2020-06-01",
-    "valid_to": "2020-06-30",
-    "price_date": "2020-05-31",
-    "strategy_name": "PRICE_DISPERSION",
-    "security_type": "US Equities",
-    "securities_set": [
-        {
-            "ticker_symbol": "BA",
-            "price": 145.85
-        },
-        {
-            "ticker_symbol": "GE",
-            "price": 6.57
-        },
-        {
-            "ticker_symbol": "XOM",
-            "price": 45.47
-        }
-    ]
-}
-[INFO] - 
-[INFO] - Recommended Securities Return: 12.83%
-[INFO] - Average Return: 1.64%
-[INFO] - 
-[INFO] - Analysis Period - 2020-05, Actual Returns as of: 2020-06-22
-analysis_period ticker  dispersion_stdev_pct  analyst_expected_return  actual_return  decile
-        2020-05     BA                36.051                    0.445          0.293       9
-        2020-05     GE                28.961                    0.355          0.072       9
-        2020-05    XOM                26.059                    0.133          0.021       9
-        2020-05     GS                19.965                    0.088          0.035       8
-        2020-05    CAT                20.156                    0.040          0.047       8
-        2020-05    CVX                15.403                    0.143         -0.001       7
-        2020-05    PFE                15.243                    0.090         -0.133       7
-        2020-05    NKE                15.452                    0.016          0.009       7
-        2020-05    TRV                14.848                    0.156          0.086       6
-        2020-05   INTC                15.180                    0.011         -0.045       6
-        2020-05     KO                10.536                    0.141         -0.020       5
-        2020-05    IBM                10.480                    0.063         -0.031       5
-        2020-05   AAPL                13.330                    0.004          0.129       5
-        2020-05    AXP                10.080                    0.107          0.046       4
-        2020-05   CSCO                 9.905                    0.022         -0.056       4
-        2020-05    MCD                 9.181                    0.088          0.006       3
-        2020-05    UNH                 8.997                    0.050         -0.040       3
-        2020-05    MMM                 9.620                    0.011          0.002       3
-        2020-05    WMT                 8.167                    0.070         -0.019       2
-        2020-05   MSFT                 8.276                    0.062          0.095       2
-        2020-05    JPM                 8.048                    0.083         -0.006       1
-        2020-05      V                 8.077                    0.028         -0.001       1
-        2020-05     HD                 7.568                   -0.047          0.003       1
-        2020-05    MRK                 6.081                    0.157         -0.049       0
-        2020-05     PG                 6.668                    0.132          0.016       0
-        2020-05     VZ                 5.883                    0.073         -0.030       0
-```
-
-### Price Dispersion Backtest
-It is possible to backtest this strategy by running the ```price_dispersion_backtest.py``` script. It works by running the strategy from 05/2019 to 02/2020 and comparing the returns of the selected portfolio with the average of the list supplied to it.
-
-Example:
-
-```
->>python price_dispersion_backtest.py -ticker_file djia30.txt -output_size 3
-[INFO] - Parameters:
-[INFO] - Ticker File: djia30.txt
-[INFO] - Output Size: 3
-[INFO] - Performing backtest for 5/2019
-[INFO] - Performing backtest for 6/2019
-[INFO] - Performing backtest for 7/2019
-[INFO] - Performing backtest for 8/2019
-[INFO] - Performing backtest for 9/2019
-[INFO] - Performing backtest for 10/2019
-[INFO] - Performing backtest for 11/2019
-[INFO] - Performing backtest for 12/2019
-[INFO] - Performing backtest for 1/2020
-[INFO] - Performing backtest for 2/2020
-investment_period  ticker_sample_size  avg_ret_1M  sel_ret_1M  avg_ret_2M  sel_ret_2M  avg_ret_3M  sel_ret_3M
-          2019/05                  12       8.09%       9.95%      11.17%      12.31%       8.74%       5.49%
-          2019/06                  26       2.35%       3.56%      -2.00%     -10.78%       0.38%      -4.30%
-          2019/07                  26      -3.10%     -11.72%      -1.03%      -5.64%      -0.07%      -3.24%
-          2019/08                  26       2.78%       8.12%       4.55%      19.49%       7.09%      29.03%
-          2019/09                  22       2.12%       9.60%       4.62%      17.53%       8.13%      21.29%
-          2019/10                  27       2.65%       5.34%       5.01%       5.97%       6.43%      14.98%
-          2019/11                  26       2.26%       0.68%       3.53%       8.88%      -8.55%      -7.02%
-          2019/12                  25       1.46%       5.60%     -10.80%      -8.54%     -19.59%     -20.31%
-          2020/01                  27     -10.03%     -10.39%     -20.47%     -21.08%     -12.65%     -20.99%
-investment_period ticker_sample_size  avg_tot_1M  sel_tot_1M  avg_tot_2M  sel_tot_2M  avg_tot_3M  sel_tot_3M
-          ----/--                 --       8.57%      20.71%      -5.42%      18.14%     -10.09%      14.93%
-```
-
-Each line reports the returns for each monthly portfolio selection at a 1 month, 2 month and 3 month horizon.
 
 ## MACD Crossover Strategy
 This is a momentum based strategy that will determine which securities in the ticker list are in a bullish pattern. Bullish stocks are included in the recommendation and indicate a buy signal, while bearish stocks are excluded, and indicate a sell.
@@ -691,7 +550,7 @@ Ticker Symbol: XOM
 ```
 
 ## Caching of financial data
-All financial data is saved to a local cache to reduce throttling and API limits when using the Intrinio API. As of this version the data is set to never expire, and the cache will grow to a maximum size of 4GB.
+All financial data is saved to a local cache to reduce throttling and API limits when using the Yahoo Finance API. As of this version the data is set to never expire, and the cache will grow to a maximum size of 4GB.
 
 The cache is located in the following path:
 

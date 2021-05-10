@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, date, time
 from collections import OrderedDict
 from support import util, constants
 from strategies.base_strategy import BaseStrategy
-from strategies import calculator
 from model.recommendation_set import SecurityRecommendationSet
 from model.ticker_list import TickerList
 from exception.exceptions import ValidationError, DataError

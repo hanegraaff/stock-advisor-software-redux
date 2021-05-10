@@ -52,12 +52,6 @@ def main():
         print(price_df.loc['2021-01-05'][yfinance.get_macd_column(12, 26)])
         print(price_df.loc['2021-01-05'][yfinance.get_macd_signal_column(12, 26, 9)])
         '''
-
-
-
-
-        
-
     except Exception as e:
         log.error("Could run script, because, %s" % (str(e)))
         #raise e
