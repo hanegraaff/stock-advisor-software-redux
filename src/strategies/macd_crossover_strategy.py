@@ -68,6 +68,8 @@ class MACDCrossoverStrategy(BaseStrategy):
 
         self.star_price_date = util.get_business_date_offset(analysis_date, -200)
 
+        self.pricing_dict = {}
+
         self.ticker_list = ticker_list
         self.analysis_date = analysis_date
         self.divergence_factor_threshold = divergence_factor_threshold
@@ -122,6 +124,7 @@ class MACDCrossoverStrategy(BaseStrategy):
         analisys_date_str = self.analysis_date.strftime("%Y-%m-%d")
 
         # load historical prices
+        if self.
         hist_prices = yfinance.get_enriched_prices(ticker_symbol, self.star_price_date, self.analysis_date)
 
         # Generate MACD lines

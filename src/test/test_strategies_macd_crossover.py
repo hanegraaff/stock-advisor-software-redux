@@ -189,53 +189,6 @@ class TestStrategiesMACDCrossover(unittest.TestCase):
         }
     }
 
-    '''
-        _read_price_metrics tests
-    '''
-
-    def test_read_price_metrics(self):
-        with patch.object(intrinio_data, 'get_daily_stock_close_prices',
-                          return_value=self.price_dict), \
-            patch.object(intrinio_data, 'get_sma_indicator',
-                         return_value=self.sma_dict), \
-            patch.object(intrinio_data, 'get_macd_indicator',
-                         return_value=self.macd_dict):
-
-            macd_strategy = MACDCrossoverStrategy(
-                self.ticker_list, date(2020, 6, 8), 0.0016, 12, 26, 9)
-
-            (current_price, macd_line,
-             signal_line) = macd_strategy._read_price_metrics('AAPL')
-
-            self.assertEqual(current_price, 54.74)
-            self.assertEqual(macd_line, 2.085415403516656)
-            self.assertEqual(signal_line, 1.1742387452049647)
-
-    def test_read_price_metrics_with_exception(self):
-        with patch.object(intrinio_data, 'get_daily_stock_close_prices',
-                          return_value={
-                "2020-06-09": 54.74
-                          }), \
-            patch.object(intrinio_data, 'get_sma_indicator',
-                         return_value={
-                "2020-06-09": 43.80299999999999
-                             }), \
-            patch.object(intrinio_data, 'get_macd_indicator',
-                         return_value={
-                "2020-06-09": {
-                "macd_histogram": 9111766583116911,
-                "macd_line": 2.085415403516656,
-                "signal_line": 1.1742387452049647
-                }
-                             }):
-
-            ticker_file_path = "%s/djia30.json" % constants.TICKER_DATA_DIR
-
-            macd_strategy = MACDCrossoverStrategy(
-                self.ticker_list, date(2020, 6, 8), 0.0016, 12, 26, 9)
-
-            with self.assertRaises(ValidationError):
-                macd_strategy._read_price_metrics('AAPL')
 
     '''
         generate_recommendation tests
