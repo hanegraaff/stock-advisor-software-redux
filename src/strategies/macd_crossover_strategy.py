@@ -105,6 +105,7 @@ class MACDCrossoverStrategy(BaseStrategy):
 
         return cls(ticker_list, analysis_date, divergence_factor_threshold, macd_fast_period, macd_slow_period, macd_signal_period)
 
+    
     def _read_price_metrics(self, ticker_symbol: str):
         '''
             Helper function that downloads the data required by the strategy.
@@ -124,8 +125,11 @@ class MACDCrossoverStrategy(BaseStrategy):
         analisys_date_str = self.analysis_date.strftime("%Y-%m-%d")
 
         # load historical prices
-        if self.
-        hist_prices = yfinance.get_enriched_prices(ticker_symbol, self.star_price_date, self.analysis_date)
+        hist_prices = self.pricing_dict.get(ticker_symbol, None)
+
+        if hist_prices == None:
+            hist_prices = yfinance.get_enriched_prices(ticker_symbol, self.star_price_date, self.analysis_date)
+            self.pricing_dict[ticker_symbol] = hist_prices
 
         # Generate MACD lines
         hist_prices[macd_col]
@@ -170,6 +174,29 @@ class MACDCrossoverStrategy(BaseStrategy):
             return True
         else:
             return False
+
+    
+    def preload_financial_data(self, extra_lookback_days: int):
+        '''
+            Preload all financial data to support backtesting.
+
+            Calling this method before a backtest avoids re-downloading
+            the same pricing data used to compute MACD data
+            
+
+            Parameters
+            ----------
+            extra_lookback_days: int
+                Additional days of history to read to accomodate the backtest.
+                For example if the backest spans 30 days, then this parameter should
+                be set to the same value
+        '''
+
+        adjusted_start_date = self.star_price_date - timedelta(days=extra_lookback_days)
+
+        for ticker_symbol in self.ticker_list.ticker_symbols:
+            self.pricing_dict[ticker_symbol] = yfinance.get_enriched_prices(ticker_symbol, adjusted_start_date, self.analysis_date)
+
 
     def generate_recommendation(self):
         '''
