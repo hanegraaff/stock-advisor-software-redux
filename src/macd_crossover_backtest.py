@@ -89,6 +89,8 @@ def main():
     }
 
     try:
+        #macd_strategy.preload_financial_data(200)
+
         date_list = get_business_date_list(start_date, end_date)
         init_portfolio_dict(ticker_list)
 

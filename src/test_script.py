@@ -39,6 +39,9 @@ def main():
         #macd_strategy = MACDCrossoverStrategy.from_configur    ation(config, 'sa')
         macd_strategy = MACDCrossoverStrategy(
             ticker_list, date(2021, 5, 7), 0.0016, 12, 26, 9)
+
+        MACDCrossoverStrategy.preload_financial_data(ticker_list, date(2021, 5, 7), 200)
+
         macd_strategy.generate_recommendation()
         macd_strategy.display_results()
 

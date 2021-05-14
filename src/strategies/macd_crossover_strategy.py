@@ -44,6 +44,9 @@ class MACDCrossoverStrategy(BaseStrategy):
     STRATEGY_NAME = "MACD_CROSSOVER"
     CONFIG_SECTION = "macd_crossover_strategy"
     S3_RECOMMENDATION_SET_OBJECT_NAME = constants.S3_MACD_CROSSOVER_RECOMMENDATION_SET_OBJECT_NAME
+    REQURIED_PRICE_HISTORY_DAYS = 200
+
+    pricing_dict = {}
 
     def __init__(self, ticker_list: object, analysis_date: date, divergence_factor_threshold: float, macd_fast_period: int, macd_slow_period: int, macd_signal_period: int):
         '''
@@ -66,9 +69,8 @@ class MACDCrossoverStrategy(BaseStrategy):
                 MACD signal period in days, e.g. 9
         '''
 
-        self.star_price_date = util.get_business_date_offset(analysis_date, -200)
-
-        self.pricing_dict = {}
+        self.start_price_date = util.get_business_date_offset(
+            analysis_date, -1 * self.REQURIED_PRICE_HISTORY_DAYS)
 
         self.ticker_list = ticker_list
         self.analysis_date = analysis_date
@@ -105,7 +107,6 @@ class MACDCrossoverStrategy(BaseStrategy):
 
         return cls(ticker_list, analysis_date, divergence_factor_threshold, macd_fast_period, macd_slow_period, macd_signal_period)
 
-    
     def _read_price_metrics(self, ticker_symbol: str):
         '''
             Helper function that downloads the data required by the strategy.
@@ -120,15 +121,18 @@ class MACDCrossoverStrategy(BaseStrategy):
             current_mcd_signal
                 The current macd signal value
         '''
-        macd_col = yfinance.get_macd_column(self.macd_fast_period, self.macd_slow_period)
-        signal_col = yfinance.get_macd_signal_column(self.macd_fast_period, self.macd_slow_period, self.macd_signal_period)
+        macd_col = yfinance.get_macd_column(
+            self.macd_fast_period, self.macd_slow_period)
+        signal_col = yfinance.get_macd_signal_column(
+            self.macd_fast_period, self.macd_slow_period, self.macd_signal_period)
         analisys_date_str = self.analysis_date.strftime("%Y-%m-%d")
 
         # load historical prices
         hist_prices = self.pricing_dict.get(ticker_symbol, None)
 
-        if hist_prices == None:
-            hist_prices = yfinance.get_enriched_prices(ticker_symbol, self.star_price_date, self.analysis_date)
+        if hist_prices is None:
+            hist_prices = yfinance.get_enriched_prices(
+                ticker_symbol, self.start_price_date, self.analysis_date)
             self.pricing_dict[ticker_symbol] = hist_prices
 
         # Generate MACD lines
@@ -175,14 +179,14 @@ class MACDCrossoverStrategy(BaseStrategy):
         else:
             return False
 
-    
-    def preload_financial_data(self, extra_lookback_days: int):
+    @classmethod
+    def preload_financial_data(cls, ticker_list: object, analysis_date: date, extra_lookback_days: int):
         '''
             Preload all financial data to support backtesting.
 
             Calling this method before a backtest avoids re-downloading
             the same pricing data used to compute MACD data
-            
+
 
             Parameters
             ----------
@@ -192,11 +196,12 @@ class MACDCrossoverStrategy(BaseStrategy):
                 be set to the same value
         '''
 
-        adjusted_start_date = self.star_price_date - timedelta(days=extra_lookback_days)
+        start_price_date = analysis_date - \
+            timedelta(days=extra_lookback_days + cls.REQURIED_PRICE_HISTORY_DAYS)
 
-        for ticker_symbol in self.ticker_list.ticker_symbols:
-            self.pricing_dict[ticker_symbol] = yfinance.get_enriched_prices(ticker_symbol, adjusted_start_date, self.analysis_date)
-
+        for ticker_symbol in ticker_list.ticker_symbols:
+            cls.pricing_dict[ticker_symbol] = yfinance.get_enriched_prices(
+                ticker_symbol, start_price_date, analysis_date)
 
     def generate_recommendation(self):
         '''
