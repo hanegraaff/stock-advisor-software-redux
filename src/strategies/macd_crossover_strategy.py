@@ -12,7 +12,9 @@ from support import util, constants
 from strategies.base_strategy import BaseStrategy
 from model.recommendation_set import SecurityRecommendationSet
 from model.ticker_list import TickerList
-from exception.exceptions import ValidationError, DataError
+from exception.exceptions import ValidationError
+from services.pricing_svc import PricingSvc
+
 
 
 #from connectors import intrinio_data, intrinio_util
@@ -45,8 +47,6 @@ class MACDCrossoverStrategy(BaseStrategy):
     CONFIG_SECTION = "macd_crossover_strategy"
     S3_RECOMMENDATION_SET_OBJECT_NAME = constants.S3_MACD_CROSSOVER_RECOMMENDATION_SET_OBJECT_NAME
     REQURIED_PRICE_HISTORY_DAYS = 200
-
-    pricing_dict = {}
 
     def __init__(self, ticker_list: object, analysis_date: date, divergence_factor_threshold: float, macd_fast_period: int, macd_slow_period: int, macd_signal_period: int):
         '''
@@ -128,12 +128,10 @@ class MACDCrossoverStrategy(BaseStrategy):
         analisys_date_str = self.analysis_date.strftime("%Y-%m-%d")
 
         # load historical prices
-        hist_prices = self.pricing_dict.get(ticker_symbol, None)
+        hist_prices = PricingSvc.get_pricing_dataframe(ticker_symbol)
 
         if hist_prices is None:
-            hist_prices = yfinance.get_enriched_prices(
-                ticker_symbol, self.start_price_date, self.analysis_date)
-            self.pricing_dict[ticker_symbol] = hist_prices
+            hist_prices = PricingSvc.load_financial_data(ticker_symbol, self.start_price_date, self.analysis_date)
 
         # Generate MACD lines
         hist_prices[macd_col]

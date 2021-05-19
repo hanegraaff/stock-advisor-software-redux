@@ -16,6 +16,7 @@ from model.ticker_list import TickerList
 from support import constants
 from support.configuration import Configuration
 from exception.exceptions import ValidationError
+from services.pricing_svc import PricingSvc
 
 #
 # Main script
@@ -36,11 +37,17 @@ def main():
         config = Configuration.from_local_config(
             constants.STRATEGY_CONFIG_FILE_NAME)
 
+        analysis_date = date(2021, 5, 7)
+        start_price_date = analysis_date - timedelta(days=400)
+
+        # Preload prices
+        for ticker in ticker_list.ticker_symbols:
+            PricingSvc.load_financial_data(ticker, start_price_date, analysis_date)
+
+
         #macd_strategy = MACDCrossoverStrategy.from_configur    ation(config, 'sa')
         macd_strategy = MACDCrossoverStrategy(
             ticker_list, date(2021, 5, 7), 0.0016, 12, 26, 9)
-
-        MACDCrossoverStrategy.preload_financial_data(ticker_list, date(2021, 5, 7), 200)
 
         macd_strategy.generate_recommendation()
         macd_strategy.display_results()

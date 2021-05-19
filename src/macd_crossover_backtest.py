@@ -4,12 +4,12 @@ import argparse
 import pandas as pd
 import logging
 import pandas_market_calendars as mcal
-from datetime import date, datetime
-from connectors import intrinio_data
+from datetime import date, datetime, timedelta
 from strategies.macd_crossover_strategy import MACDCrossoverStrategy
 from model.ticker_list import TickerList
 from support import constants, logging_definition
 from exception.exceptions import ValidationError
+from services.pricing_svc import PricingSvc
 
 log = logging.getLogger()
 
@@ -42,7 +42,7 @@ def main():
                 allowed loss of a trade before a stop loss takes effect.
               """
 
-    parser = argparse.ArgumentParser(description=description)
+    '''parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-ticker_list", help="Ticker List File",
                         type=str, required=True)
     date_parser = lambda s: datetime.strptime(s, '%Y/%m/%d')
@@ -58,7 +58,12 @@ def main():
     ticker_file_name = args.ticker_list
     start_date = args.start_date
     end_date = args.end_date
-    stop_loss_theshold = args.stop_loss_theshold
+    stop_loss_theshold = args.stop_loss_theshold'''
+
+    ticker_file_name = 'macd_tickers.json'
+    start_date = '2021/01/01'
+    end_date = '2021/05/18'
+    stop_loss_theshold = 0.02
 
     log.info("Parameters:")
     log.info("Ticker File: %s" % ticker_file_name)
@@ -89,7 +94,15 @@ def main():
     }
 
     try:
-        #macd_strategy.preload_financial_data(200)
+
+        start = datetime.strptime(start_date, "%Y/%m/%d")
+        end = datetime.strptime(end_date, "%Y/%m/%d")
+
+        start_price_date = start - timedelta(days=400)
+
+        # Preload prices
+        for ticker in ticker_list.ticker_symbols:
+            PricingSvc.load_financial_data(ticker, start_price_date, end)
 
         date_list = get_business_date_list(start_date, end_date)
         init_portfolio_dict(ticker_list)
@@ -162,9 +175,11 @@ def get_close_price(ticker: str, price_date: date):
     '''
         Reads the close price of a ticker symbol given a price date
     '''
-    return intrinio_data.get_daily_stock_close_prices(
-        ticker, price_date, price_date
-    )[str(price_date)]
+    price_df = PricingSvc.get_pricing_dataframe(ticker)
+    price_date_str = str(price_date)
+
+    return price_df.loc[price_date_str]['Close']
+
 
 
 def init_portfolio_dict(ticker_list: object):
