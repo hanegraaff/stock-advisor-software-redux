@@ -33,7 +33,9 @@ SIGNAL_PERIOD = 9
 
 def main():
     """
-        Main Function for this script
+        Main Function for this script. Example invocation:
+
+        >> python macd_crossover_backtest.py -ticker_list macd_tickers.json -start_date 2020/01/01 -end_date 2020/05/18 -stop_loss_theshold -0.02
     """
 
     description = """
@@ -42,7 +44,7 @@ def main():
                 allowed loss of a trade before a stop loss takes effect.
               """
 
-    '''parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("-ticker_list", help="Ticker List File",
                         type=str, required=True)
     date_parser = lambda s: datetime.strptime(s, '%Y/%m/%d')
@@ -58,12 +60,7 @@ def main():
     ticker_file_name = args.ticker_list
     start_date = args.start_date
     end_date = args.end_date
-    stop_loss_theshold = args.stop_loss_theshold'''
-
-    ticker_file_name = 'macd_tickers.json'
-    start_date = '2021/01/01'
-    end_date = '2021/05/18'
-    stop_loss_theshold = 0.02
+    stop_loss_theshold = args.stop_loss_theshold
 
     log.info("Parameters:")
     log.info("Ticker File: %s" % ticker_file_name)

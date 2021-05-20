@@ -14,8 +14,6 @@ It's being refactored to support the Yahoo Finance API the capabilities it suppo
         * [TDAmeritrade Keys](#tdameritrade-keys)
     * [Develpment Environment](#develpment-environment)
 * [Trading Strategies](#trading-strategies)
-    * [Price Dispersion Strategy](#price-dispersion-strategy)
-        * [Backtest](#price-dispersion-backtest)
     * [MACD Crossover Strategy](#macd-crossover-strategy)
         * [Backtest](#macd-crossover-backtest)
 * [Securities Recommendation Service](#securities-recommendation-service)
@@ -84,7 +82,7 @@ python3.8 -m venv venv
 All scripts must be executed from the ```src``` folder.
 
 # Trading Strategies
-All recommendations produced by the Securities Recommendation Service are created using Trading Strategies which are located in the ```strategies``` module of this software. A strategy is simply an algorithm that reads a list of securities (currently US Equities), downloads all necessary financial data and either ranks or filters them to produce a subset that is predicted to outperform their peers based on the algorithm's calculations. 
+All recommendations produced by the Securities Recommendation Service are created using Trading Strategies which are located in the ```strategies``` module of this software. A strategy is an algorithm that reads a list of securities, downloads all necessary financial data and either ranks or filters them to produce a subset that is predicted to outperform their peers based on the algorithm's calculations. 
 
 All strategies are implemented as classes that derive from the ```BaseStrategy``` Abstract Base Class, and expose a consistent interface. Each is self contained in the sense that it must be able to initialize using a configuration file stored either locally or in S3, the latter being how strategies are initialized in production. They can also be initialized using a constructor, a technique which is useful when backtesting or performing other types of tests.
 
@@ -118,12 +116,15 @@ Here is an example of a (trimmed) list representing the DOW30.
 
 When running in production, inputs are defined in a configuration file and are supplied to a strategy during initialization. This configuration identifies the appropriate ticker list and defines other static parameters used by the strategy.
 
-Here is an example section for the Price Dispersion strategy:
+Here is an example section for the MACD Crosssover strategy:
 
 ```ini
-[price_dispersion_strategy]
+[macd_crossover_strategy]
 ticker_list_file_name=djia30.json
-output_size=3
+divergence_factor_threshold = 0.0016 
+macd_fast_period = 12
+macd_slow_period = 26
+macd_signal_period = 9
 ```
 
 Next, is an example of a strategy that is initialized using configuration. The application namespace is used to identify the S3 bucket used to store inputs. All inputs can be soured locally or from S3. In fact if an input is sourced from S3 and is not found, this software will look for a suitable local alternative and stage it to S3. This is done to simplify the preparation work when new strategies are introduced.
@@ -136,7 +137,7 @@ app_namespae = 'sa'
 
 config = Configuration.try_from_s3(
     constants.STRATEGY_CONFIG_FILE_NAME, app_namespae)
-pd_strategy = PriceDispersionStrategy.from_configuration(config, app_namespae)
+macd_strategy = MACDCrossoverStrategy.from_configuration(config, app_namespae)
 ```
 
 Alternatively, strategies can be initialized using a plain constructor. The two methods are functionally equivalent.
@@ -147,11 +148,11 @@ from model.ticker_list import TickerList
 ticker_list = TickerList.from_local_file(
             "%s/djia30.json" % (constants.APP_DATA_DIR))
 
-pd_strategy = PriceDispersionStrategy(
-            ticker_list, '2020-06', date(2020, 2, 22), 3)
+macd_strategy = MACDCrossoverStrategyMACDCrossoverStrategy(
+            ticker_list, date(2021, 5, 7), 0.0016, 12, 26, 9)
 ```
 
-The output of a strategy is a RecommendationSet object which contains the list of recommended securities and a date range indicating its valid duration. Each strategy is different, and some will produce recommendations that can change daily (e.g. MACD crossover strategy) while others will last much longer (e.g. Price Dispersion Strategy)
+The output of a strategy is a RecommendationSet object which contains the list of recommended securities and a date range indicating its valid duration. Currently only the MACD Crossover stragegy is supported, and it's only valid for the current date
 
 Once a strategy is initialized, it can be executed like this. the ```display_results``` method display all intermediate data and final results to the screen, and is optional.
 
