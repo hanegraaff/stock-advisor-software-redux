@@ -11,3 +11,4 @@ financial-data
 *.xlsx
 app_data
 *.s3download
+.ipynb_checkpoints
